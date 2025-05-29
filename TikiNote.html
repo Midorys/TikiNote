@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tiki Note</title>
+  <style>
+    :root {
+      --primary-color: #B7A7A9; /* Granite */
+      --secondary-color: #F6ECE3; /* Beige */
+      --accent-color: #91766E; /* Brown */
+      --bg-color: #FFFFFF; /* Blanco */
+      --text-color: #000000; /* Negro */
+      --header-height: 70px;
+      --sidebar-width: 220px;
+      --border-radius: 8px;
+      --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      --transition: all 0.3s ease;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      line-height: 1.6;
+    }
+
+    header {
+      background-color: var(--primary-color);
+      height: var(--header-height);
+      display: flex;
+      align-items: center;
+      padding: 0 2rem;
+      box-shadow: var(--box-shadow);
+      position: relative;
+      z-index: 10;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--text-color);
+    }
+
+    #main-container {
+      display: flex;
+      height: calc(100vh - var(--header-height));
+    }
+
+    nav {
+      width: var(--sidebar-width);
+      background-color: var(--secondary-color);
+      border-right: 1px solid #ddd;
+      display: none;
+      flex-direction: column;
+      padding: 1rem 0;
+      transition: var(--transition);
+    }
+
+    nav button {
+      background: none;
+      border: none;
+      padding: 0.8rem 1.5rem;
+      text-align: left;
+      font-size: 1rem;
+      cursor: pointer;
+      border-left: 4px solid transparent;
+      color: var(--text-color);
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      gap: 0.8rem;
+    }
+
+    nav button:hover,
+    nav button.active {
+      background-color: rgba(0, 0, 0, 0.05);
+      border-left-color: var(--accent-color);
+    }
+
+    nav button::before {
+      content: "•";
+      color: var(--accent-color);
+      font-size: 1.2rem;
+    }
+
+    .section {
+      flex: 1;
+      display: none;
+      padding: 2rem;
+      overflow-y: auto;
+      background-color: var(--bg-color);
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    .section h2 {
+      color: var(--accent-color);
+      margin-top: 0;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid var(--secondary-color);
+    }
+
+    .note, .reminder {
+      background-color: var(--secondary-color);
+      padding: 1.2rem;
+      margin-bottom: 1rem;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      position: relative;
+      transition: var(--transition);
+    }
+
+    .note:hover, .reminder:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .note h3 {
+      margin-top: 0;
+      color: var(--accent-color);
+    }
+
+    input, textarea, select, button {
+      font-family: inherit;
+      transition: var(--transition);
+    }
+
+    input, textarea, select {
+      width: 100%;
+      padding: 0.8rem;
+      margin: 0.5rem 0 1rem;
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      background-color: var(--secondary-color);
+    }
+
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 2px rgba(145, 118, 110, 0.2);
+    }
+
+    button {
+      padding: 0.8rem 1.5rem;
+      background-color: var(--accent-color);
+      color: white;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-weight: 500;
+    }
+
+    button:hover {
+      background-color: #7a635c;
+      transform: translateY(-1px);
+    }
+
+    .delete-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background-color: #d9534f;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      cursor: pointer;
+      width: 25px;
+      height: 25px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+    }
+
+    .delete-btn:hover {
+      background-color: #c9302c;
+    }
+
+    .error-message {
+      color: #d9534f;
+      margin: 0.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    .calendar-container {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .calendar-header button {
+      background-color: transparent;
+      color: var(--accent-color);
+      border: 1px solid var(--accent-color);
+      padding: 0.5rem 1rem;
+    }
+
+    .calendar-header button:hover {
+      background-color: var(--accent-color);
+      color: white;
+    }
+
+    #calendar-month-year {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--accent-color);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 0.5rem;
+    }
+
+    .calendar-day {
+      background-color: var(--secondary-color);
+      border: 1px solid #ddd;
+      border-radius: var(--border-radius);
+      padding: 1rem;
+      cursor: pointer;
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .calendar-day:hover {
+      background-color: var(--primary-color);
+      color: white;
+    }
+
+    .calendar-day.empty {
+      background-color: transparent;
+      border: none;
+      cursor: default;
+    }
+
+    .vision-board-canvas {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      background-color: var(--secondary-color);
+      border: 2px dashed var(--primary-color);
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+      border-radius: var(--border-radius);
+    }
+
+    .draggable {
+      position: absolute;
+      cursor: move;
+      user-select: none;
+      transition: var(--transition);
+    }
+
+    .vision-controls {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+      flex-wrap: wrap;
+    }
+
+    .hidden {
+      display: none;
+    }
+    
+    /* Estilos para los editores flotantes */
+    .editor-popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background-color: var(--secondary-color);
+      padding: 25px;
+      border-radius: var(--border-radius);
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
+      z-index: 1000;
+      width: 350px;
+      max-width: 90%;
+    }
+    
+    .editor-popup h3 {
+      margin-top: 0;
+      color: var(--accent-color);
+      font-size: 1.3rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 1px solid var(--primary-color);
+    }
+    
+    .editor-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 1rem;
+    }
+    
+    .editor-control-group {
+      display: flex;
+      align-items: center;
+    }
+    
+    .editor-control-group label {
+      width: 100px;
+      margin-right: 15px;
+      font-weight: 500;
+    }
+    
+    .editor-control-group select,
+    .editor-control-group input {
+      flex: 1;
+      padding: 8px;
+      margin: 0;
+    }
+    
+    .editor-buttons {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    
+    .editor-buttons button {
+      padding: 8px 20px;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    
+    .editor-save {
+      background-color: var(--accent-color);
+      color: white;
+    }
+    
+    .editor-cancel {
+      background-color: var(--primary-color);
+      color: white;
+    }
+    
+    .editor-delete {
+      background-color: #d9534f;
+      color: white;
+      margin-right: auto;
+    }
+    
+    .overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(0, 0, 0, 0.5);
+      z-index: 999;
+      backdrop-filter: blur(3px);
+    }
+    
+    /* Miniaturas para previsualización */
+    .preview-container {
+      text-align: center;
+      margin: 15px 0;
+      padding: 15px;
+      border: 1px dashed var(--primary-color);
+      border-radius: var(--border-radius);
+      background-color: white;
+    }
+    
+    .preview-container img {
+      max-width: 100%;
+      max-height: 120px;
+      object-fit: contain;
+    }
+    
+    /* Estilos para botones de deshacer/rehacer */
+    .undo-redo-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    
+    .undo-redo-buttons button {
+      padding: 8px 15px;
+      border: none;
+      border-radius: var(--border-radius);
+      background-color: var(--primary-color);
+      color: white;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    
+    .undo-redo-buttons button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .undo-redo-buttons button:hover:not(:disabled) {
+      background-color: var(--accent-color);
+    }
+
+    /* Estilos para el formulario de login */
+    #login {
+      max-width: 500px;
+      margin: 0 auto;
+      padding-top: 3rem;
+    }
+
+    #login h2 {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    #login button {
+      width: 100%;
+      margin-top: 1rem;
+    }
+
+    /* Estilos para la papelera */
+    .trash-item {
+      background-color: var(--secondary-color);
+      padding: 1.2rem;
+      margin-bottom: 1rem;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      position: relative;
+      opacity: 0.8;
+    }
+
+    .trash-item:hover {
+      opacity: 1;
+    }
+
+    /* Estilos para ajustes */
+    #settings label {
+      display: block;
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    /* Context menu */
+    .context-menu {
+      position: absolute;
+      background-color: white;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      z-index: 100;
+      min-width: 150px;
+      display: none;
+    }
+
+    .context-menu button {
+      display: block;
+      width: 100%;
+      text-align: left;
+      padding: 0.6rem 1rem;
+      background: none;
+      border: none;
+      color: var(--text-color);
+      border-radius: 0;
+    }
+
+    .context-menu button:hover {
+      background-color: var(--secondary-color);
+      color: var(--accent-color);
+    }
+
+    .context-menu button.delete-context {
+      color: #d9534f;
+    }
+
+    /* Estilos para el editor de calendario */
+    .time-selector {
+      display: none;
+    }
+    
+    .time-selector.active {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .time-selector select {
+      flex: 1;
+    }
+
+    /* Responsive design */
+    @media (max-width: 768px) {
+      nav {
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        bottom: 0;
+        z-index: 100;
+        transform: translateX(-100%);
+      }
+
+      nav.show {
+        transform: translateX(0);
+      }
+
+      .section {
+        padding: 1.5rem;
+      }
+
+      .vision-board-canvas {
+        height: 400px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Tiki Note</h1>
+  </header>
+  <div id="main-container">
+    <nav id="sidebar">
+      <button onclick="showSection('calendar')">Calendario</button>
+      <button onclick="showSection('notes')">Notas</button>
+      <button onclick="showSection('reminders')">Recordatorios</button>
+      <button onclick="showSection('vision')">Vision Board</button>
+      <button onclick="showSection('trash')">Papelera</button>
+      <button onclick="showSection('settings')">Ajustes</button>
+    </nav>
+
+    <div class="section active" id="login">
+      <h2>Inicio de Sesión</h2>
+      <div id="login-error" class="error-message"></div>
+      <input type="email" id="email" placeholder="Correo electrónico" />
+      <input type="text" id="nickname" placeholder="Apodo" />
+      <input type="password" id="password" placeholder="Contraseña" />
+      <input type="password" id="confirm-password" placeholder="Verificar Contraseña" />
+      <button onclick="login()">Iniciar Sesión</button>
+      <p style="text-align: center; margin-top: 1rem;">¿No tienes cuenta? <a href="#" onclick="showRegisterForm()">Regístrate</a></p>
+    </div>
+
+    <div class="section" id="calendar">
+      <h2>Calendario</h2>
+      <div class="calendar-container">
+        <div class="calendar-header">
+          <button onclick="changeMonth(-1)">&#8592; Anterior</button>
+          <span id="calendar-month-year"></span>
+          <button onclick="changeMonth(1)">Siguiente &#8594;</button>
+        </div>
+        <div class="calendar-grid" id="calendar-grid"></div>
+      </div>
+    </div>
+
+    <div class="section" id="notes">
+      <h2>Notas</h2>
+      <div id="notes-container"></div>
+    </div>
+
+    <div class="section" id="reminders">
+      <h2>Recordatorios</h2>
+      <div id="reminders-list"></div>
+    </div>
+
+    <div class="section" id="vision">
+      <h2>Vision Board</h2>
+      <div class="undo-redo-buttons">
+        <button id="undo-btn" onclick="undoAction()" disabled>Deshacer</button>
+        <button id="redo-btn" onclick="redoAction()" disabled>Rehacer</button>
+      </div>
+      <div class="vision-controls">
+        <button onclick="addText()">Agregar Texto</button>
+        <input type="file" id="image-upload" accept="image/*" onchange="addImage(event)" style="display: none;">
+        <button onclick="document.getElementById('image-upload').click()">Agregar Imagen</button>
+      </div>
+      <div id="vision-canvas" class="vision-board-canvas"></div>
+    </div>
+
+    <div class="section" id="trash">
+      <h2>Papelera</h2>
+      <div id="trash-container"></div>
+    </div>
+
+    <div class="section" id="settings">
+      <h2>Ajustes</h2>
+      <label>Idioma:
+        <select id="language">
+          <option>Español</option>
+          <option>Inglés</option>
+        </select>
+      </label>
+      <label>Nombre de usuario:
+        <input type="text" id="profile-name" />
+      </label>
+      <button onclick="alert('Ajustes guardados')">Guardar Ajustes</button>
+    </div>
+  </div>
+
+  <!-- Editor de calendario flotante -->
+  <div id="calendar-editor-overlay" class="overlay hidden"></div>
+  <div id="calendar-editor-popup" class="editor-popup hidden">
+    <h3 id="calendar-editor-title">Nueva entrada</h3>
+    <div class="editor-controls">
+      <div class="editor-control-group">
+        <label for="calendar-entry-type">Tipo:</label>
+        <select id="calendar-entry-type">
+          <option value="note">Nota</option>
+          <option value="reminder">Recordatorio</option>
+        </select>
+      </div>
+      
+      <div id="time-selector" class="time-selector">
+        <div class="editor-control-group">
+          <label for="calendar-hour">Hora:</label>
+          <select id="calendar-hour">
+            <option value="00">00</option>
+            <option value="01">01</option>
+            <option value="02">02</option>
+            <option value="03">03</option>
+            <option value="04">04</option>
+            <option value="05">05</option>
+            <option value="06">06</option>
+            <option value="07">07</option>
+            <option value="08">08</option>
+            <option value="09">09</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+            <option value="16">16</option>
+            <option value="17">17</option>
+            <option value="18">18</option>
+            <option value="19">19</option>
+            <option value="20">20</option>
+            <option value="21">21</option>
+            <option value="22">22</option>
+            <option value="23">23</option>
+          </select>
+        </div>
+        <div class="editor-control-group">
+          <label for="calendar-minute">Minuto:</label>
+          <select id="calendar-minute">
+            <option value="00">00</option>
+            <option value="05">05</option>
+            <option value="10">10</option>
+            <option value="15">15</option>
+            <option value="20">20</option>
+            <option value="25">25</option>
+            <option value="30">30</option>
+            <option value="35">35</option>
+            <option value="40">40</option>
+            <option value="45">45</option>
+            <option value="50">50</option>
+            <option value="55">55</option>
+          </select>
+        </div>
+      </div>
+      
+      <div class="editor-control-group">
+        <label for="calendar-content">Contenido:</label>
+        <textarea id="calendar-content" rows="4" placeholder="Escribe aquí..."></textarea>
+      </div>
+      
+      <div class="editor-control-group">
+        <label for="calendar-color">Color:</label>
+        <input type="color" id="calendar-color" value="#B7A7A9">
+      </div>
+    </div>
+    <div class="editor-buttons">
+      <button class="editor-cancel" onclick="closeCalendarEditor()">Cancelar</button>
+      <button class="editor-save" onclick="saveCalendarEntry()">Guardar</button>
+    </div>
+  </div>
+
+  <!-- Context menu para elementos del Vision Board -->
+  <div id="context-menu" class="context-menu">
+    <button onclick="openElementEditor()">Editar</button>
+    <button onclick="deleteSelectedElement()" class="delete-context">Eliminar</button>
+  </div>
+
+  <!-- Ventana flotante para edición de texto -->
+  <div id="text-editor-overlay" class="overlay hidden"></div>
+  <div id="text-editor-popup" class="editor-popup hidden">
+    <h3>Editar Texto</h3>
+    <div class="editor-controls">
+      <div class="editor-control-group">
+        <label for="text-font">Fuente:</label>
+        <select id="text-font">
+          <option value="Arial, sans-serif">Arial</option>
+          <option value="'Times New Roman', serif">Times New Roman</option>
+          <option value="'Courier New', monospace">Courier New</option>
+          <option value="'Comic Sans MS', cursive">Comic Sans</option>
+          <option value="'Georgia', serif">Georgia</option>
+          <option value="'Palatino Linotype', serif">Palatino</option>
+        </select>
+      </div>
+      <div class="editor-control-group">
+        <label for="text-size">Tamaño:</label>
+        <input type="range" id="text-size" min="8" max="72" value="16">
+        <span id="text-size-value">16px</span>
+      </div>
+      <div class="editor-control-group">
+        <label for="text-color">Color:</label>
+        <input type="color" id="text-color" value="#000000">
+      </div>
+      <div class="editor-control-group">
+        <label for="text-content">Texto:</label>
+        <input type="text" id="text-content" placeholder="Escribe tu texto">
+      </div>
+    </div>
+    <div class="editor-buttons">
+      <button class="editor-delete" onclick="deleteEditingElement()">Eliminar</button>
+      <button class="editor-cancel" onclick="closeTextEditor()">Cancelar</button>
+      <button class="editor-save" onclick="applyTextChanges()">Aplicar</button>
+    </div>
+  </div>
+
+  <!-- Ventana flotante para edición de imagen -->
+  <div id="image-editor-overlay" class="overlay hidden"></div>
+  <div id="image-editor-popup" class="editor-popup hidden">
+    <h3>Editar Imagen</h3>
+    <div class="preview-container">
+      <img id="image-preview" src="" alt="Previsualización">
+    </div>
+    <div class="editor-controls">
+      <div class="editor-control-group">
+        <label for="image-width">Ancho:</label>
+        <input type="range" id="image-width" min="50" max="500" value="100">
+        <span id="image-width-value">100px</span>
+      </div>
+      <div class="editor-control-group">
+        <label for="image-height">Alto:</label>
+        <input type="range" id="image-height" min="50" max="500" value="100">
+        <span id="image-height-value">100px</span>
+      </div>
+      <div class="editor-control-group">
+        <label for="image-rotation">Rotación:</label>
+        <input type="range" id="image-rotation" min="0" max="360" value="0">
+        <span id="image-rotation-value">0°</span>
+      </div>
+    </div>
+    <div class="editor-buttons">
+      <button class="editor-delete" onclick="deleteEditingElement()">Eliminar</button>
+      <button class="editor-cancel" onclick="closeImageEditor()">Cancelar</button>
+      <button class="editor-save" onclick="applyImageChanges()">Aplicar</button>
+    </div>
+  </div>
+
+  <!-- Ventana flotante para registro -->
+  <div id="register-overlay" class="overlay hidden"></div>
+  <div id="register-popup" class="editor-popup hidden">
+    <h3>Crear Cuenta</h3>
+    <div id="register-error" class="error-message"></div>
+    <input type="email" id="register-email" placeholder="Correo electrónico" />
+    <input type="text" id="register-nickname" placeholder="Apodo" />
+    <input type="password" id="register-password" placeholder="Contraseña" />
+    <input type="password" id="register-confirm" placeholder="Verificar Contraseña" />
+    <div class="editor-buttons">
+      <button class="editor-cancel" onclick="closeRegisterForm()">Cancelar</button>
+      <button class="editor-save" onclick="register()">Registrarme</button>
+    </div>
+  </div>
+
+  <script>
+    // Variables globales
+    let trash = [];
+    let currentDate = new Date();
+    const calendarGrid = document.getElementById('calendar-grid');
+    let currentEditingElement = null;
+    let selectedElement = null;
+    let actionHistory = [];
+    let currentHistoryIndex = -1;
+    let isRecordingAction = false;
+    const contextMenu = document.getElementById('context-menu');
+    let contextMenuTarget = null;
+    let currentSelectedDate = null;
+
+    // Funciones principales
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      closeContextMenu();
+    }
+
+    // Funciones para el registro
+    function showRegisterForm() {
+      document.getElementById('register-overlay').classList.remove('hidden');
+      document.getElementById('register-popup').classList.remove('hidden');
+    }
+
+    function closeRegisterForm() {
+      document.getElementById('register-overlay').classList.add('hidden');
+      document.getElementById('register-popup').classList.add('hidden');
+      document.getElementById('register-error').textContent = '';
+    }
+
+    function register() {
+      const email = document.getElementById('register-email').value;
+      const nickname = document.getElementById('register-nickname').value;
+      const password = document.getElementById('register-password').value;
+      const confirm = document.getElementById('register-confirm').value;
+      const error = document.getElementById('register-error');
+
+      error.textContent = '';
+      if (!email || !nickname || !password || !confirm) {
+        error.textContent = 'Todos los campos son obligatorios.';
+        return;
+      }
+      if (password !== confirm) {
+        error.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+
+      // Aquí normalmente enviarías los datos al servidor
+      // Por ahora solo cerramos el formulario y llenamos los campos de login
+      document.getElementById('email').value = email;
+      document.getElementById('nickname').value = nickname;
+      document.getElementById('password').value = password;
+      document.getElementById('confirm-password').value = password;
+
+      closeRegisterForm();
+      alert('¡Registro exitoso! Ahora puedes iniciar sesión.');
+    }
+
+    function login() {
+      const email = document.getElementById('email').value;
+      const nickname = document.getElementById('nickname').value;
+      const password = document.getElementById('password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+      const error = document.getElementById('login-error');
+
+      error.textContent = '';
+      if (!email || !nickname || !password || !confirmPassword) {
+        error.textContent = 'Todos los campos son obligatorios.';
+        return;
+      }
+      if (password !== confirmPassword) {
+        error.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('sidebar').style.display = 'flex';
+      showSection('calendar');
+    }
+
+    // Funciones del calendario
+    function updateCalendar() {
+      const monthYear = document.getElementById('calendar-month-year');
+      const month = currentDate.getMonth();
+      const year = currentDate.getFullYear();
+      monthYear.textContent = `${currentDate.toLocaleString('default', { month: 'long' })} ${year}`;
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      calendarGrid.innerHTML = '';
+
+      // Días de la semana
+      const weekdays = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      weekdays.forEach(day => {
+        const dayElement = document.createElement('div');
+        dayElement.textContent = day;
+        dayElement.style.fontWeight = 'bold';
+        dayElement.style.color = 'var(--accent-color)';
+        calendarGrid.appendChild(dayElement);
+      });
+
+      for (let i = 0; i < firstDay; i++) {
+        const empty = document.createElement('div');
+        empty.className = 'calendar-day empty';
+        calendarGrid.appendChild(empty);
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const cell = document.createElement('div');
+        cell.className = 'calendar-day';
+        cell.textContent = day;
+        cell.onclick = () => selectDate(day, month + 1, year);
+        calendarGrid.appendChild(cell);
+      }
+    }
+
+    function changeMonth(delta) {
+      currentDate.setMonth(currentDate.getMonth() + delta);
+      updateCalendar();
+    }
+
+    function selectDate(day, month, year) {
+      currentSelectedDate = { day, month, year };
+      openCalendarEditor(day, month, year);
+    }
+
+    function openCalendarEditor(day, month, year) {
+      document.getElementById('calendar-editor-overlay').classList.remove('hidden');
+      document.getElementById('calendar-editor-popup').classList.remove('hidden');
+      document.getElementById('calendar-editor-title').textContent = `Nueva entrada para ${day}/${month}/${year}`;
+      document.getElementById('calendar-content').value = '';
+      
+      // Configurar el selector de tipo para mostrar/ocultar hora
+      const entryTypeSelect = document.getElementById('calendar-entry-type');
+      const timeSelector = document.getElementById('time-selector');
+      
+      entryTypeSelect.addEventListener('change', function() {
+        if (this.value === 'reminder') {
+          timeSelector.classList.add('active');
+        } else {
+          timeSelector.classList.remove('active');
+        }
+      });
+      
+      // Resetear valores
+      entryTypeSelect.value = 'note';
+      timeSelector.classList.remove('active');
+      document.getElementById('calendar-hour').value = '08';
+      document.getElementById('calendar-minute').value = '00';
+      document.getElementById('calendar-color').value = '#B7A7A9';
+    }
+
+    function closeCalendarEditor() {
+      document.getElementById('calendar-editor-overlay').classList.add('hidden');
+      document.getElementById('calendar-editor-popup').classList.add('hidden');
+    }
+
+    function saveCalendarEntry() {
+      const type = document.getElementById('calendar-entry-type').value;
+      const content = document.getElementById('calendar-content').value;
+      const color = document.getElementById('calendar-color').value;
+      
+      if (!content) {
+        alert('Por favor ingresa un contenido para la entrada.');
+        return;
+      }
+      
+      let timeInfo = '';
+      if (type === 'reminder') {
+        const hour = document.getElementById('calendar-hour').value;
+        const minute = document.getElementById('calendar-minute').value;
+        timeInfo = ` a las ${hour}:${minute}`;
+      }
+      
+      const { day, month, year } = currentSelectedDate;
+      const dateStr = `${day}/${month}/${year}`;
+      
+      const div = document.createElement('div');
+      div.className = type;
+      div.style.backgroundColor = color;
+      div.style.position = 'relative';
+      div.style.marginBottom = '10px';
+      div.style.padding = '1rem';
+      div.style.borderRadius = '8px';
+      div.innerHTML = `
+        <strong>${type === 'note' ? 'Nota' : 'Recordatorio'} (${dateStr}${timeInfo})</strong><br>
+        ${content}
+      `;
+
+      const btn = document.createElement('button');
+      btn.textContent = '×';
+      btn.className = 'delete-btn';
+      btn.onclick = () => moveToTrash(div);
+      div.appendChild(btn);
+
+      if (type === 'note') {
+        document.getElementById('notes-container').appendChild(div);
+      } else {
+        document.getElementById('reminders-list').appendChild(div);
+      }
+
+      closeCalendarEditor();
+    }
+
+    // Funciones de la papelera
+    function moveToTrash(element) {
+      trash.push(element);
+      element.remove();
+      updateTrash();
+    }
+
+    function updateTrash() {
+      const container = document.getElementById('trash-container');
+      container.innerHTML = '';
+      trash.forEach((el, i) => {
+        const clone = el.cloneNode(true);
+        const restoreBtn = document.createElement('button');
+        restoreBtn.textContent = '↩';
+        restoreBtn.className = 'delete-btn';
+        restoreBtn.style.right = '40px';
+        restoreBtn.onclick = () => restoreItem(i);
+        clone.appendChild(restoreBtn);
+        container.appendChild(clone);
+      });
+    }
+
+    function restoreItem(index) {
+      const item = trash.splice(index, 1)[0];
+      if (item.classList.contains('note')) {
+        document.getElementById('notes-container').appendChild(item);
+      } else {
+        document.getElementById('reminders-list').appendChild(item);
+      }
+      updateTrash();
+    }
+
+    // Funciones del Vision Board
+    function recordAction(element, actionType, oldState, newState) {
+      if (isRecordingAction) return;
+      
+      if (currentHistoryIndex < actionHistory.length - 1) {
+        actionHistory = actionHistory.slice(0, currentHistoryIndex + 1);
+      }
+      
+      const action = {
+        element: element,
+        actionType: actionType,
+        oldState: oldState,
+        newState: newState
+      };
+      
+      actionHistory.push(action);
+      currentHistoryIndex = actionHistory.length - 1;
+      
+      updateUndoRedoButtons();
+    }
+
+    function undoAction() {
+      if (currentHistoryIndex < 0) return;
+      
+      const action = actionHistory[currentHistoryIndex];
+      applyState(action.element, action.oldState);
+      
+      currentHistoryIndex--;
+      updateUndoRedoButtons();
+    }
+
+    function redoAction() {
+      if (currentHistoryIndex >= actionHistory.length - 1) return;
+      
+      currentHistoryIndex++;
+      const action = actionHistory[currentHistoryIndex];
+      applyState(action.element, action.newState);
+      
+      updateUndoRedoButtons();
+    }
+
+    function applyState(element, state) {
+      if (!element || !state) return;
+      
+      isRecordingAction = true;
+      
+      if (state.type === 'text') {
+        element.style.left = state.left;
+        element.style.top = state.top;
+        element.style.fontFamily = state.fontFamily;
+        element.style.fontSize = state.fontSize;
+        element.style.color = state.color;
+        element.textContent = state.text || element.textContent;
+        element.setAttribute('data-font', state.fontFamily);
+        element.setAttribute('data-size', state.fontSize.replace('px', ''));
+        element.setAttribute('data-color', state.color);
+      } else if (state.type === 'image') {
+        element.style.left = state.left;
+        element.style.top = state.top;
+        element.style.width = state.width;
+        element.style.height = state.height;
+        element.style.transform = state.transform;
+        element.setAttribute('data-width', state.width.replace('px', ''));
+        element.setAttribute('data-height', state.height.replace('px', ''));
+        element.setAttribute('data-rotation', state.rotation);
+      }
+      
+      isRecordingAction = false;
+    }
+
+    function updateUndoRedoButtons() {
+      document.getElementById('undo-btn').disabled = currentHistoryIndex < 0;
+      document.getElementById('redo-btn').disabled = currentHistoryIndex >= actionHistory.length - 1;
+    }
+
+    function getElementState(element) {
+      if (element.tagName === 'DIV') {
+        return {
+          type: 'text',
+          left: element.style.left,
+          top: element.style.top,
+          fontFamily: element.style.fontFamily,
+          fontSize: element.style.fontSize,
+          color: element.style.color,
+          text: element.textContent
+        };
+      } else if (element.tagName === 'IMG') {
+        const rotation = element.getAttribute('data-rotation') || '0';
+        return {
+          type: 'image',
+          left: element.style.left,
+          top: element.style.top,
+          width: element.style.width,
+          height: element.style.height,
+          transform: `rotate(${rotation}deg)`,
+          rotation: rotation
+        };
+      }
+      return null;
+    }
+
+    function addText() {
+      const canvas = document.getElementById('vision-canvas');
+      const text = prompt("Texto:");
+      if (!text) return;
+
+      const el = document.createElement('div');
+      el.className = 'draggable';
+      el.contentEditable = false;
+      el.style.left = '50px';
+      el.style.top = '50px';
+      el.style.color = 'black';
+      el.style.fontSize = '16px';
+      el.style.fontFamily = 'Arial, sans-serif';
+      el.style.padding = '10px';
+      el.style.borderRadius = '4px';
+      el.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+      el.textContent = text;
+      
+      el.setAttribute('data-font', 'Arial, sans-serif');
+      el.setAttribute('data-size', '16');
+      el.setAttribute('data-color', '#000000');
+      
+      makeDraggable(el);
+      
+      el.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        showContextMenu(e, el);
+      });
+      
+      canvas.appendChild(el);
+      
+      // Abrir el editor de texto inmediatamente después de crear el elemento
+      openTextEditor(el);
+      
+      recordAction(el, 'create', null, getElementState(el));
+    }
+
+    function addImage(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const img = document.createElement('img');
+        img.src = e.target.result;
+        img.className = 'draggable';
+        img.style.width = '100px';
+        img.style.height = '100px';
+        img.style.left = '100px';
+        img.style.top = '100px';
+        img.style.objectFit = 'cover';
+        img.style.borderRadius = '4px';
+        
+        img.setAttribute('data-width', '100');
+        img.setAttribute('data-height', '100');
+        img.setAttribute('data-rotation', '0');
+        
+        makeDraggable(img);
+        
+        img.addEventListener('contextmenu', function(e) {
+          e.preventDefault();
+          showContextMenu(e, img);
+        });
+        
+        document.getElementById('vision-canvas').appendChild(img);
+        
+        // Abrir el editor de imagen inmediatamente después de crear el elemento
+        openImageEditor(img);
+        
+        recordAction(img, 'create', null, getElementState(img));
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function makeDraggable(el) {
+      let isDragging = false, offsetX = 0, offsetY = 0;
+      let oldLeft = el.style.left;
+      let oldTop = el.style.top;
+
+      // Evento para hacer draggable
+      el.onmousedown = function (e) {
+        if (e.button === 0) {
+          isDragging = true;
+          offsetX = e.offsetX;
+          offsetY = e.offsetY;
+          
+          oldLeft = el.style.left;
+          oldTop = el.style.top;
+          
+          bringToFront(el);
+          
+          document.onmousemove = function (e) {
+            if (isDragging) {
+              el.style.left = (e.pageX - offsetX) + 'px';
+              el.style.top = (e.pageY - offsetY) + 'px';
+            }
+          };
+          
+          document.onmouseup = function () {
+            isDragging = false;
+            document.onmousemove = null;
+            document.onmouseup = null;
+            
+            if (oldLeft !== el.style.left || oldTop !== el.style.top) {
+              const oldState = getElementState(el);
+              oldState.left = oldLeft;
+              oldState.top = oldTop;
+              
+              const newState = getElementState(el);
+              recordAction(el, 'move', oldState, newState);
+            }
+          };
+        }
+      };
+
+      // Evento para hacer clic y editar
+      el.onclick = function(e) {
+        // Solo abrir editor si no estamos arrastrando
+        if (!isDragging && e.button === 0) {
+          if (el.tagName === 'DIV') {
+            openTextEditor(el);
+          } else if (el.tagName === 'IMG') {
+            openImageEditor(el);
+          }
+        }
+      };
+
+      // Doble clic también abre el editor
+      el.ondblclick = function(e) {
+        e.preventDefault();
+        if (el.tagName === 'DIV') {
+          openTextEditor(el);
+        } else if (el.tagName === 'IMG') {
+          openImageEditor(el);
+        }
+      };
+
+      // Mantener el menú contextual
+      el.addEventListener('contextmenu', function(e) {
+        e.preventDefault();
+        showContextMenu(e, el);
+      });
+    }
+
+    function bringToFront(element) {
+      const canvas = document.getElementById('vision-canvas');
+      const elements = canvas.querySelectorAll('.draggable');
+      let maxZIndex = 0;
+      
+      elements.forEach(el => {
+        const zIndex = parseInt(el.style.zIndex) || 0;
+        if (zIndex > maxZIndex) maxZIndex = zIndex;
+      });
+      
+      element.style.zIndex = maxZIndex + 1;
+    }
+
+    // Funciones del menú contextual
+    function showContextMenu(e, element) {
+      e.preventDefault();
+      closeContextMenu();
+      
+      selectedElement = element;
+      contextMenuTarget = element;
+      
+      contextMenu.style.display = 'block';
+      contextMenu.style.left = `${e.pageX}px`;
+      contextMenu.style.top = `${e.pageY}px`;
+      
+      bringToFront(element);
+    }
+
+    function closeContextMenu() {
+      contextMenu.style.display = 'none';
+      contextMenuTarget = null;
+    }
+
+    function openElementEditor() {
+      if (!contextMenuTarget) return;
+      
+      if (contextMenuTarget.tagName === 'DIV') {
+        openTextEditor(contextMenuTarget);
+      } else if (contextMenuTarget.tagName === 'IMG') {
+        openImageEditor(contextMenuTarget);}
+      
+      closeContextMenu();
+    }
+
+    function deleteSelectedElement() {
+      if (!contextMenuTarget) return;
+      
+      const state = getElementState(contextMenuTarget);
+      recordAction(contextMenuTarget, 'delete', state, null);
+      
+      contextMenuTarget.remove();
+      closeContextMenu();
+    }
+
+    // Funciones de los editores
+    function openTextEditor(element) {
+      currentEditingElement = element;
+      
+      document.getElementById('text-editor-overlay').classList.remove('hidden');
+      document.getElementById('text-editor-popup').classList.remove('hidden');
+      
+      document.getElementById('text-font').value = element.getAttribute('data-font') || 'Arial, sans-serif';
+      document.getElementById('text-size').value = element.getAttribute('data-size') || '16';
+      document.getElementById('text-size-value').textContent = element.getAttribute('data-size') + 'px' || '16px';
+      document.getElementById('text-color').value = element.getAttribute('data-color') || '#000000';
+      document.getElementById('text-content').value = element.textContent;
+      
+      document.getElementById('text-font').addEventListener('change', updateTextPreview);
+      document.getElementById('text-size').addEventListener('input', updateTextPreview);
+      document.getElementById('text-color').addEventListener('input', updateTextPreview);
+      document.getElementById('text-content').addEventListener('input', updateTextPreview);
+      
+      function updateTextPreview() {
+        element.style.fontFamily = document.getElementById('text-font').value;
+        element.style.fontSize = document.getElementById('text-size').value + 'px';
+        element.style.color = document.getElementById('text-color').value;
+        element.textContent = document.getElementById('text-content').value;
+        
+        document.getElementById('text-size-value').textContent = document.getElementById('text-size').value + 'px';
+      }
+    }
+
+    function closeTextEditor() {
+      document.getElementById('text-editor-overlay').classList.add('hidden');
+      document.getElementById('text-editor-popup').classList.add('hidden');
+      
+      document.getElementById('text-font').removeEventListener('change', updateTextPreview);
+      document.getElementById('text-size').removeEventListener('input', updateTextPreview);
+      document.getElementById('text-color').removeEventListener('input', updateTextPreview);
+      document.getElementById('text-content').removeEventListener('input', updateTextPreview);
+      
+      currentEditingElement = null;
+    }
+
+    function applyTextChanges() {
+      if (!currentEditingElement) return;
+      
+      const oldState = getElementState(currentEditingElement);
+      
+      currentEditingElement.style.fontFamily = document.getElementById('text-font').value;
+      currentEditingElement.style.fontSize = document.getElementById('text-size').value + 'px';
+      currentEditingElement.style.color = document.getElementById('text-color').value;
+      currentEditingElement.textContent = document.getElementById('text-content').value;
+      
+      currentEditingElement.setAttribute('data-font', document.getElementById('text-font').value);
+      currentEditingElement.setAttribute('data-size', document.getElementById('text-size').value);
+      currentEditingElement.setAttribute('data-color', document.getElementById('text-color').value);
+      
+      const newState = getElementState(currentEditingElement);
+      recordAction(currentEditingElement, 'edit', oldState, newState);
+      
+      closeTextEditor();
+    }
+
+    function openImageEditor(element) {
+      currentEditingElement = element;
+      
+      document.getElementById('image-editor-overlay').classList.remove('hidden');
+      document.getElementById('image-editor-popup').classList.remove('hidden');
+      
+      const width = element.getAttribute('data-width') || '100';
+      const height = element.getAttribute('data-height') || '100';
+      const rotation = element.getAttribute('data-rotation') || '0';
+      
+      document.getElementById('image-width').value = width;
+      document.getElementById('image-width-value').textContent = width + 'px';
+      document.getElementById('image-height').value = height;
+      document.getElementById('image-height-value').textContent = height + 'px';
+      document.getElementById('image-rotation').value = rotation;
+      document.getElementById('image-rotation-value').textContent = rotation + '°';
+      
+      document.getElementById('image-preview').src = element.src;
+      
+      document.getElementById('image-width').addEventListener('input', updateImagePreview);
+      document.getElementById('image-height').addEventListener('input', updateImagePreview);
+      document.getElementById('image-rotation').addEventListener('input', updateImagePreview);
+      
+      function updateImagePreview() {
+        const width = document.getElementById('image-width').value;
+        const height = document.getElementById('image-height').value;
+        const rotation = document.getElementById('image-rotation').value;
+        
+        element.style.width = width + 'px';
+        element.style.height = height + 'px';
+        element.style.transform = `rotate(${rotation}deg)`;
+        
+        element.setAttribute('data-width', width);
+        element.setAttribute('data-height', height);
+        element.setAttribute('data-rotation', rotation);
+        
+        document.getElementById('image-width-value').textContent = width + 'px';
+        document.getElementById('image-height-value').textContent = height + 'px';
+        document.getElementById('image-rotation-value').textContent = rotation + '°';
+      }
+    }
+
+    function closeImageEditor() {
+      document.getElementById('image-editor-overlay').classList.add('hidden');
+      document.getElementById('image-editor-popup').classList.add('hidden');
+      
+      document.getElementById('image-width').removeEventListener('input', updateImagePreview);
+      document.getElementById('image-height').removeEventListener('input', updateImagePreview);
+      document.getElementById('image-rotation').removeEventListener('input', updateImagePreview);
+      
+      currentEditingElement = null;
+    }
+
+    function applyImageChanges() {
+      if (!currentEditingElement) return;
+      
+      const oldState = getElementState(currentEditingElement);
+      const newState = getElementState(currentEditingElement);
+      recordAction(currentEditingElement, 'edit', oldState, newState);
+      
+      closeImageEditor();
+    }
+
+    function deleteEditingElement() {
+      if (!currentEditingElement) return;
+      
+      const state = getElementState(currentEditingElement);
+      recordAction(currentEditingElement, 'delete', state, null);
+      
+      currentEditingElement.remove();
+      
+      if (currentEditingElement.tagName === 'DIV') {
+        closeTextEditor();
+      } else {
+        closeImageEditor();
+      }
+    }
+
+    // Inicialización
+    document.addEventListener('DOMContentLoaded', function() {
+      updateCalendar();
+      
+      document.addEventListener('click', function(e) {
+        if (!contextMenu.contains(e.target)) {
+          closeContextMenu();
+        }
+      });
+      
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+          closeContextMenu();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
